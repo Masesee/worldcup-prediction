@@ -27,6 +27,10 @@ FEATURES = [
     "decayed_goals_scored",
     "decayed_goals_conceded",
     "decayed_stage_reached",
+    "historical_clean_sheet_rate",
+    "historical_failed_to_score_rate",
+    "historical_appearances",
+    "recent_appearances_count",
 ]
 
 

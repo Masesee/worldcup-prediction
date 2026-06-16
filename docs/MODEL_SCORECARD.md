@@ -20,14 +20,18 @@ This scorecard summarizes the final champion model configuration and validation 
 *   `decayed_goals_scored`: Exponentially decayed goals scored over the last 3 tournaments.
 *   `decayed_goals_conceded`: Exponentially decayed goals conceded over the last 3 tournaments.
 *   `decayed_stage_reached`: Exponentially decayed stage reached over the last 3 tournaments.
+*   `historical_clean_sheet_rate`: Historical average clean sheets rate in previous World Cups.
+*   `historical_failed_to_score_rate`: Historical average failed to score rate in previous World Cups.
+*   `historical_appearances`: Total historical World Cup appearances prior to the tournament.
+*   `recent_appearances_count`: Total appearances in the last 3 World Cups.
 
 ## Validation Results
 Evaluated using Out-of-Time Cross-Validation (validate on 2018 and 2022).
 
 | Target | Metric | Validation Score |
 | :--- | :--- | :--- |
-| **Goals Prediction (60% weight)** | RMSE | **3.4069** |
-| **Stage Prediction (40% weight)** | Macro F1 | **0.3594** |
+| **Goals Prediction (60% weight)** | RMSE | **3.4760** |
+| **Stage Prediction (40% weight)** | Macro F1 | **0.3750** |
 
 ## Best Hyperparameters
 Tuned using Optuna (50 trials per model).

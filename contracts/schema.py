@@ -82,3 +82,7 @@ class TeamFeatureSchema(BaseModel):
     decayed_goals_scored: float
     decayed_goals_conceded: float
     decayed_stage_reached: float
+    historical_clean_sheet_rate: float
+    historical_failed_to_score_rate: float
+    historical_appearances: float
+    recent_appearances_count: float

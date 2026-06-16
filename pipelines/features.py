@@ -162,28 +162,41 @@ def extract_features(
             goals_scored = 0
             goals_conceded = 0
             wins = 0
+            clean_sheets = 0
+            failed_to_score = 0
 
             for _, m in team_matches.iterrows():
                 is_home = m["home_team_name"] == team
                 if is_home:
-                    goals_scored += m["home_team_score"]
-                    goals_conceded += m["away_team_score"]
+                    s_goals = m["home_team_score"]
+                    c_goals = m["away_team_score"]
                     if m["home_team_win"] == 1:
                         wins += 1
                 else:
-                    goals_scored += m["away_team_score"]
-                    goals_conceded += m["home_team_score"]
+                    s_goals = m["away_team_score"]
+                    c_goals = m["home_team_score"]
                     if m["away_team_win"] == 1:
                         wins += 1
+
+                goals_scored += s_goals
+                goals_conceded += c_goals
+                if c_goals == 0:
+                    clean_sheets += 1
+                if s_goals == 0:
+                    failed_to_score += 1
 
             goals_scored_per_match = goals_scored / total_matches
             goals_conceded_per_match = goals_conceded / total_matches
             win_rate = wins / total_matches
+            clean_sheet_rate = clean_sheets / total_matches
+            failed_to_score_rate = failed_to_score / total_matches
         else:
             # Debutant: fill with NaN, will impute with confederation stats later
             goals_scored_per_match = np.nan
             goals_conceded_per_match = np.nan
             win_rate = np.nan
+            clean_sheet_rate = np.nan
+            failed_to_score_rate = np.nan
 
         # 2. Get average stage reached in previous tournaments
         past_seasons = train_proc[
@@ -253,6 +266,10 @@ def extract_features(
                 "decayed_goals_scored": decayed_gs,
                 "decayed_goals_conceded": decayed_gc,
                 "decayed_stage_reached": decayed_stage,
+                "historical_clean_sheet_rate": clean_sheet_rate,
+                "historical_failed_to_score_rate": failed_to_score_rate,
+                "historical_appearances": len(past_seasons) if not past_seasons.empty else 0.0,
+                "recent_appearances_count": len(past_seasons.head(3)) if not past_seasons.empty else 0.0,
             }
         )
 
@@ -272,10 +289,14 @@ def extract_features(
             if not conf_past.empty:
                 conf_avg_gs = conf_past["historical_goals_scored_per_match"].mean()
                 conf_avg_stage = conf_past["historical_avg_stage_reached"].mean()
+                conf_avg_cs = conf_past["historical_clean_sheet_rate"].mean()
+                conf_avg_fts = conf_past["historical_failed_to_score_rate"].mean()
             else:
                 # Default baseline values for very early years
                 conf_avg_gs = 1.2
                 conf_avg_stage = 0.5
+                conf_avg_cs = 0.25
+                conf_avg_fts = 0.25
 
             confed_stats.append(
                 {
@@ -283,6 +304,8 @@ def extract_features(
                     "confederation_name": conf,
                     "confederation_avg_goals_scored": conf_avg_gs if not np.isnan(conf_avg_gs) else 1.2,
                     "confederation_avg_stage_reached": conf_avg_stage if not np.isnan(conf_avg_stage) else 0.5,
+                    "confederation_avg_clean_sheets": conf_avg_cs if not np.isnan(conf_avg_cs) else 0.25,
+                    "confederation_avg_failed_to_score": conf_avg_fts if not np.isnan(conf_avg_fts) else 0.25,
                 }
             )
 
@@ -303,6 +326,11 @@ def extract_features(
             features_df.loc[idx, "historical_win_rate"] = 0.33
         if np.isnan(row["historical_avg_stage_reached"]):
             features_df.loc[idx, "historical_avg_stage_reached"] = row["confederation_avg_stage_reached"]
+
+        if np.isnan(row["historical_clean_sheet_rate"]):
+            features_df.loc[idx, "historical_clean_sheet_rate"] = row["confederation_avg_clean_sheets"]
+        if np.isnan(row["historical_failed_to_score_rate"]):
+            features_df.loc[idx, "historical_failed_to_score_rate"] = row["confederation_avg_failed_to_score"]
 
         if np.isnan(row["decayed_goals_scored"]):
             features_df.loc[idx, "decayed_goals_scored"] = row["historical_goals_scored_per_match"]

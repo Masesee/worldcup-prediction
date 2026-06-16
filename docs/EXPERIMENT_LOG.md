@@ -18,3 +18,19 @@ This file records all tuning and validation iterations of the World Cup 2026 Goa
 2.  **Home Advantage**: Adjusting the Elo calculation for host countries (adding +100 rating points to the host's Elo during the match expectation phase) improves alignment with historical outcomes.
 3.  **Capacity Mapping**: Structural capacity mapping successfully guarantees valid tournament outputs for the stage prediction task. This avoids the problem where standard models would fail to predict `roundof32` since there were 0 instances of it in the historical training set.
 4.  **Debutant Imputation**: Using confederation-level averages to impute prior stats for debutants (Jordan, Uzbekistan, Cabo Verde, Curacao) prevented NaN propagation and allowed valid predictions for these countries.
+
+## Run 2: Added Clean Sheet, Failed-to-Score, and Appearance Features
+*   **Date**: 2026-06-16
+*   **Pipeline Version**: 1.1.0
+*   **Tuning Framework**: Optuna (50 trials per target)
+*   **Validation Method**: Out-of-Time Cross-Validation (validate on 2018 and 2022)
+*   **Tuned Parameters Location**: `outputs/models/best_params.json`
+
+### Performance Metrics
+*   **Goals Predictor (RMSE)**: 3.4760
+*   **Stage Predictor (Macro F1)**: 0.3750
+*   **Calculated Overall Validation Score**: 0.5414 (Improved from 0.5393 in Run 1)
+
+### Key Lessons & Insights
+1.  **Defense & Scoring Features**: Clean sheet rates and failed-to-score rates provide distinct signals for target prediction compared to average goal rates alone.
+2.  **Tournament Experience**: Historical appearance counts and recent appearance counts help differentiate experienced teams from debutants, improving the macro F1 score of the stage model from 0.3594 to 0.3750.
