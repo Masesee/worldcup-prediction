@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest and MyPy caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Project Data (ignore large datasets, features, and databases)
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.parquet
+experiments/logs/*.db
+
+# Model weights
+outputs/models/*.pkl
+
+# Submissions
+outputs/submissions/*.csv
+
+# Local agent configs and directories
+.agents/
+.gemini/

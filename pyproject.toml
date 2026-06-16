@@ -1,0 +1,28 @@
+[project]
+name = "worldcup_prediction"
+version = "0.1.0"
+description = "World Cup 2026 Goal Prediction Challenge solution"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0.0",
+    "pydantic>=2.0.0",
+    "scikit-learn>=1.2.0",
+    "lightgbm>=3.3.0",
+    "xgboost>=1.7.0",
+    "optuna>=3.0.0",
+    "pytest>=7.0.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I", "N"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

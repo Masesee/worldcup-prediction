@@ -1,0 +1,20 @@
+{
+    "goals": {
+        "learning_rate": 0.19733483419076964,
+        "num_leaves": 7,
+        "max_depth": 6,
+        "min_child_samples": 9,
+        "subsample": 0.8223531378905589,
+        "colsample_bytree": 0.6445801441812782,
+        "n_estimators": 117
+    },
+    "stage": {
+        "learning_rate": 0.06638414703876906,
+        "num_leaves": 18,
+        "max_depth": 4,
+        "min_child_samples": 8,
+        "subsample": 0.8478512233267763,
+        "colsample_bytree": 0.9349633359673137,
+        "n_estimators": 110
+    }
+}
