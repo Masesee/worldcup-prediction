@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
-from contracts.schema import TrainRowSchema, InferenceRowSchema, SubmissionRowSchema
+
+from contracts.schema import InferenceRowSchema, SubmissionRowSchema, TrainRowSchema
 
 
 def test_train_row_schema_validation():
@@ -55,8 +56,9 @@ def test_submission_row_schema_validation():
 
 
 def test_processed_data_validation():
-    import pandas as pd
     import os
+
+    import pandas as pd
 
     processed_dir = "worldcup_prediction/data/processed"
     if os.path.exists(processed_dir):
@@ -67,7 +69,9 @@ def test_processed_data_validation():
             for _, row in train_df.iterrows():
                 row_dict = row.to_dict()
                 # Remove extra columns that are not part of the base TrainRowSchema
-                schema_data = {k: v for k, v in row_dict.items() if k in TrainRowSchema.model_fields}
+                schema_data = {
+                    k: v for k, v in row_dict.items() if k in TrainRowSchema.model_fields
+                }
                 TrainRowSchema(**schema_data)
 
         # Validate test_processed.csv
@@ -76,7 +80,9 @@ def test_processed_data_validation():
             test_df = pd.read_csv(test_path)
             for _, row in test_df.iterrows():
                 row_dict = row.to_dict()
-                schema_data = {k: v for k, v in row_dict.items() if k in InferenceRowSchema.model_fields}
+                schema_data = {
+                    k: v for k, v in row_dict.items() if k in InferenceRowSchema.model_fields
+                }
                 InferenceRowSchema(**schema_data)
 
     # Validate outputs/submissions/submission.csv

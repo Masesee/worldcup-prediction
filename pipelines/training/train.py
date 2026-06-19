@@ -14,7 +14,6 @@ import pandas as pd
 
 FEATURES = [
     "elo_rating_prior",
-    "is_host",
     "historical_goals_scored_per_match",
     "historical_goals_conceded_per_match",
     "historical_win_rate",

@@ -1,11 +1,12 @@
 import os
 import tempfile
+
 import pandas as pd
-import pytest
+
 from pipelines.preprocessing import (
     clean_countries,
-    run_elo_simulation,
     preprocess_data,
+    run_elo_simulation,
 )
 
 
@@ -112,4 +113,7 @@ def test_preprocess_data():
         # Check Elo prior column was added
         assert "elo_rating_prior" in train_proc.columns
         assert "elo_rating_prior" in test_proc.columns
-        assert train_proc.loc[train_proc["country"] == "Argentina", "elo_rating_prior"].values[0] == 1500.0
+        assert (
+            train_proc.loc[train_proc["country"] == "Argentina", "elo_rating_prior"].values[0]
+            == 1500.0
+        )
