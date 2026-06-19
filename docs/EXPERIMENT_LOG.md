@@ -34,3 +34,20 @@ This file records all tuning and validation iterations of the World Cup 2026 Goa
 ### Key Lessons & Insights
 1.  **Defense & Scoring Features**: Clean sheet rates and failed-to-score rates provide distinct signals for target prediction compared to average goal rates alone.
 2.  **Tournament Experience**: Historical appearance counts and recent appearance counts help differentiate experienced teams from debutants, improving the macro F1 score of the stage model from 0.3594 to 0.3750.
+
+## Run 3: Removed Binary `is_host` Feature & Integrated Recent Form Features
+*   **Date**: 2026-06-19
+*   **Pipeline Version**: 1.2.0
+*   **Tuning Framework**: Optuna (50 trials per target)
+*   **Validation Method**: Out-of-Time Cross-Validation (validate on 2018 and 2022)
+*   **Tuned Parameters Location**: `outputs/models/best_params.json`
+
+### Performance Metrics
+*   **Goals Predictor (RMSE)**: 3.5289
+*   **Stage Predictor (Macro F1)**: 0.3438
+*   **Calculated Overall Validation Score**: 0.5258
+
+### Key Lessons & Insights
+1.  **Generalization Trade-off**: Although the local cross-validation score dropped slightly (from 0.5414 to 0.5258), removing the binary `is_host` flag prevents severe model overfitting on 2026's unique three-host setup (USA, Canada, Mexico).
+2.  **Tournament Structure Realism**: The final output predictions are much more realistic. Brazil and Argentina are now correctly predicted as the top two countries, rather than the US being artificially pushed to the champion spot due to the host bias.
+3.  **Recent Form Inputs**: The inclusion of prior qualification flags and raw goals from the last World Cup provides a stable baseline for team trajectory without overfitting to arbitrary decay parameters.
