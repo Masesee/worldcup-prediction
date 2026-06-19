@@ -1,11 +1,12 @@
 import os
 import tempfile
+
 import pandas as pd
-import pytest
+
 from pipelines.features import (
+    extract_features,
     get_team_confederation,
     get_tournament_stages,
-    extract_features,
 )
 
 
@@ -92,7 +93,9 @@ def test_extract_features():
         pd.DataFrame(test_data).to_csv(os.path.join(tmpdir, "Test.csv"), index=False)
         pd.DataFrame(matches_data).to_csv(os.path.join(tmpdir, "matches.csv"), index=False)
         pd.DataFrame(tournaments_data).to_csv(os.path.join(tmpdir, "tournaments.csv"), index=False)
-        pd.DataFrame(standings_data).to_csv(os.path.join(tmpdir, "tournament_standings.csv"), index=False)
+        pd.DataFrame(standings_data).to_csv(
+            os.path.join(tmpdir, "tournament_standings.csv"), index=False
+        )
 
         # Create processed folder and write processed train/test with Elo prior
         train_proc = pd.DataFrame(train_data)
@@ -117,3 +120,7 @@ def test_extract_features():
         # Verify correct features were generated
         assert "historical_goals_scored_per_match" in train_feat.columns
         assert "elo_rating_prior" in test_feat.columns
+        assert "qualified_last_tournament" in train_feat.columns
+        assert "qualified_two_tournaments_ago" in train_feat.columns
+        assert "goals_scored_last_wc" in train_feat.columns
+        assert "goals_conceded_last_wc" in train_feat.columns

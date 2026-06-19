@@ -4,9 +4,10 @@ Extracts team-level and confederation-level historical features.
 """
 
 import os
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
 
 # Mapping of debutant teams to their confederation names
 DEBUTANT_CONFEDERATION = {
@@ -38,9 +39,7 @@ def get_team_confederation(team: str, train_df: pd.DataFrame) -> str:
     return "Union of European Football Associations"  # Default fallback
 
 
-def get_tournament_stages(
-    train_df: pd.DataFrame, standings_df: pd.DataFrame
-) -> pd.DataFrame:
+def get_tournament_stages(train_df: pd.DataFrame, standings_df: pd.DataFrame) -> pd.DataFrame:
     """Maps historical stages to clean target stages."""
     train = train_df.copy()
     # Merge with standings to get exact position
@@ -100,9 +99,7 @@ def extract_features(
     # Clean country names in matches and tournaments
     from pipelines.preprocessing import clean_countries
 
-    matches = clean_countries(
-        matches_df, ["home_team_name", "away_team_name", "country_name"]
-    )
+    matches = clean_countries(matches_df, ["home_team_name", "away_team_name", "country_name"])
     tournaments = clean_countries(tournaments_df, ["host_country"])
 
     # Ensure dates are datetime objects
@@ -210,9 +207,7 @@ def extract_features(
 
         # 3. Decayed features over last 3 appearances
         if not past_seasons.empty:
-            past_seasons_sorted = past_seasons.sort_values(
-                by="start_date", ascending=False
-            )
+            past_seasons_sorted = past_seasons.sort_values(by="start_date", ascending=False)
             stages = past_seasons_sorted["Target_ordinal"].tolist()[:3]
 
             # Calculate goals scored/conceded in those specific tournaments
@@ -252,6 +247,51 @@ def extract_features(
             decayed_gs = np.nan
             decayed_gc = np.nan
 
+        # 3.5. Recent Form logic
+        past_tours = combined[combined["start_date"] < start_date].sort_values(
+            by="start_date", ascending=False
+        )
+        unique_past_dates = past_tours["start_date"].unique()
+
+        last_tour_date = unique_past_dates[0] if len(unique_past_dates) > 0 else None
+        two_tours_ago_date = unique_past_dates[1] if len(unique_past_dates) > 1 else None
+
+        qualified_last_tournament = 0
+        qualified_two_tournaments_ago = 0
+        goals_scored_last_wc = np.nan
+        goals_conceded_last_wc = np.nan
+
+        if last_tour_date is not None:
+            last_season = train_proc[
+                (train_proc["country"] == team) & (train_proc["start_date"] == last_tour_date)
+            ]
+            if not last_season.empty:
+                qualified_last_tournament = 1
+                last_tour_id = last_season.iloc[0]["tournament_id"]
+                ps_matches = matches[
+                    ((matches["home_team_name"] == team) | (matches["away_team_name"] == team))
+                    & (matches["tournament_id"] == last_tour_id)
+                ]
+                ps_goals_s = 0
+                ps_goals_c = 0
+                for _, m in ps_matches.iterrows():
+                    if m["home_team_name"] == team:
+                        ps_goals_s += m["home_team_score"]
+                        ps_goals_c += m["away_team_score"]
+                    else:
+                        ps_goals_s += m["away_team_score"]
+                        ps_goals_c += m["home_team_score"]
+                match_count = len(ps_matches) if len(ps_matches) > 0 else 3.0
+                goals_scored_last_wc = ps_goals_s / match_count
+                goals_conceded_last_wc = ps_goals_c / match_count
+
+        if two_tours_ago_date is not None:
+            two_seasons = train_proc[
+                (train_proc["country"] == team) & (train_proc["start_date"] == two_tours_ago_date)
+            ]
+            if not two_seasons.empty:
+                qualified_two_tournaments_ago = 1
+
         feature_records.append(
             {
                 "ID": row["ID"],
@@ -269,7 +309,13 @@ def extract_features(
                 "historical_clean_sheet_rate": clean_sheet_rate,
                 "historical_failed_to_score_rate": failed_to_score_rate,
                 "historical_appearances": len(past_seasons) if not past_seasons.empty else 0.0,
-                "recent_appearances_count": len(past_seasons.head(3)) if not past_seasons.empty else 0.0,
+                "recent_appearances_count": len(past_seasons.head(3))
+                if not past_seasons.empty
+                else 0.0,
+                "qualified_last_tournament": qualified_last_tournament,
+                "qualified_two_tournaments_ago": qualified_two_tournaments_ago,
+                "goals_scored_last_wc": goals_scored_last_wc,
+                "goals_conceded_last_wc": goals_conceded_last_wc,
             }
         )
 
@@ -302,10 +348,18 @@ def extract_features(
                 {
                     "tournament_id": tour_id,
                     "confederation_name": conf,
-                    "confederation_avg_goals_scored": conf_avg_gs if not np.isnan(conf_avg_gs) else 1.2,
-                    "confederation_avg_stage_reached": conf_avg_stage if not np.isnan(conf_avg_stage) else 0.5,
-                    "confederation_avg_clean_sheets": conf_avg_cs if not np.isnan(conf_avg_cs) else 0.25,
-                    "confederation_avg_failed_to_score": conf_avg_fts if not np.isnan(conf_avg_fts) else 0.25,
+                    "confederation_avg_goals_scored": conf_avg_gs
+                    if not np.isnan(conf_avg_gs)
+                    else 1.2,
+                    "confederation_avg_stage_reached": conf_avg_stage
+                    if not np.isnan(conf_avg_stage)
+                    else 0.5,
+                    "confederation_avg_clean_sheets": conf_avg_cs
+                    if not np.isnan(conf_avg_cs)
+                    else 0.25,
+                    "confederation_avg_failed_to_score": conf_avg_fts
+                    if not np.isnan(conf_avg_fts)
+                    else 0.25,
                 }
             )
 
@@ -319,25 +373,44 @@ def extract_features(
     # 5. Impute team-level NaNs using confederation-level averages
     for idx, row in features_df.iterrows():
         if np.isnan(row["historical_goals_scored_per_match"]):
-            features_df.loc[idx, "historical_goals_scored_per_match"] = row["confederation_avg_goals_scored"]
+            features_df.loc[idx, "historical_goals_scored_per_match"] = row[
+                "confederation_avg_goals_scored"
+            ]
         if np.isnan(row["historical_goals_conceded_per_match"]):
-            features_df.loc[idx, "historical_goals_conceded_per_match"] = 1.5 - row["confederation_avg_goals_scored"]
+            features_df.loc[idx, "historical_goals_conceded_per_match"] = (
+                1.5 - row["confederation_avg_goals_scored"]
+            )
         if np.isnan(row["historical_win_rate"]):
             features_df.loc[idx, "historical_win_rate"] = 0.33
         if np.isnan(row["historical_avg_stage_reached"]):
-            features_df.loc[idx, "historical_avg_stage_reached"] = row["confederation_avg_stage_reached"]
+            features_df.loc[idx, "historical_avg_stage_reached"] = row[
+                "confederation_avg_stage_reached"
+            ]
 
         if np.isnan(row["historical_clean_sheet_rate"]):
-            features_df.loc[idx, "historical_clean_sheet_rate"] = row["confederation_avg_clean_sheets"]
+            features_df.loc[idx, "historical_clean_sheet_rate"] = row[
+                "confederation_avg_clean_sheets"
+            ]
         if np.isnan(row["historical_failed_to_score_rate"]):
-            features_df.loc[idx, "historical_failed_to_score_rate"] = row["confederation_avg_failed_to_score"]
+            features_df.loc[idx, "historical_failed_to_score_rate"] = row[
+                "confederation_avg_failed_to_score"
+            ]
 
         if np.isnan(row["decayed_goals_scored"]):
             features_df.loc[idx, "decayed_goals_scored"] = row["historical_goals_scored_per_match"]
         if np.isnan(row["decayed_goals_conceded"]):
-            features_df.loc[idx, "decayed_goals_conceded"] = row["historical_goals_conceded_per_match"]
+            features_df.loc[idx, "decayed_goals_conceded"] = row[
+                "historical_goals_conceded_per_match"
+            ]
         if np.isnan(row["decayed_stage_reached"]):
             features_df.loc[idx, "decayed_stage_reached"] = row["historical_avg_stage_reached"]
+
+        if np.isnan(row["goals_scored_last_wc"]):
+            features_df.loc[idx, "goals_scored_last_wc"] = row["confederation_avg_goals_scored"]
+        if np.isnan(row["goals_conceded_last_wc"]):
+            features_df.loc[idx, "goals_conceded_last_wc"] = (
+                1.5 - row["confederation_avg_goals_scored"]
+            )
 
     # Separate train and test features
     train_features = features_df[features_df["tournament_id"] != "WC-2026"].copy()
@@ -345,7 +418,16 @@ def extract_features(
 
     # Merge remaining columns from processed train and test datasets
     train_features = train_proc[
-        ["ID", "year", "matches_played", "total_goals", "Target", "Target_ordinal", "is_host", "elo_rating_prior"]
+        [
+            "ID",
+            "year",
+            "matches_played",
+            "total_goals",
+            "Target",
+            "Target_ordinal",
+            "is_host",
+            "elo_rating_prior",
+        ]
     ].merge(train_features.drop(columns=["start_date", "confederation_name"]), on="ID", how="left")
 
     test_features = test_proc[["ID", "is_host", "elo_rating_prior"]].merge(
@@ -354,12 +436,8 @@ def extract_features(
 
     # Save features to parquet
     os.makedirs(processed_dir, exist_ok=True)
-    train_features.to_parquet(
-        os.path.join(processed_dir, "train_features.parquet"), index=False
-    )
-    test_features.to_parquet(
-        os.path.join(processed_dir, "test_features.parquet"), index=False
-    )
+    train_features.to_parquet(os.path.join(processed_dir, "train_features.parquet"), index=False)
+    test_features.to_parquet(os.path.join(processed_dir, "test_features.parquet"), index=False)
     print("Feature matrices written successfully to data/processed/")
 
     return train_features, test_features
@@ -372,4 +450,3 @@ if __name__ == "__main__":
         "data/raw",
         "data/processed",
     )
-

@@ -1,18 +1,18 @@
+import json
 import os
 import tempfile
-import json
-import pandas as pd
+
 import numpy as np
-import pytest
-from pipelines.training.tune import (
-    run_validation_capacity_mapping,
-    evaluate_goals_model,
-    evaluate_stage_model,
-    tune_pipelines,
-)
+import pandas as pd
+
 from pipelines.training.train import (
     run_test_capacity_mapping,
     train_and_predict,
+)
+from pipelines.training.tune import (
+    evaluate_goals_model,
+    run_validation_capacity_mapping,
+    tune_pipelines,
 )
 
 FEATURES = [
@@ -31,6 +31,10 @@ FEATURES = [
     "historical_failed_to_score_rate",
     "historical_appearances",
     "recent_appearances_count",
+    "qualified_last_tournament",
+    "qualified_two_tournaments_ago",
+    "goals_scored_last_wc",
+    "goals_conceded_last_wc",
 ]
 
 
@@ -131,7 +135,8 @@ def test_tune_and_train_integration():
         # Run Optuna tuning (limit n_trials for speed in tests)
         # We modify optuna.create_study mock or just run it.
         # To make it fast, we can run tune_pipelines.
-        # But wait! Optuna tuning is fast with n_trials=50, but in tests, 50 trials might take 2-3 seconds.
+        # But wait! Optuna tuning is fast with n_trials=50, but in tests,
+        # 50 trials might take 2-3 seconds.
         # Let's run it.
         tune_pipelines(tmpdir, tmpdir)
 

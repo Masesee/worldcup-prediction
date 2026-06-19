@@ -4,8 +4,9 @@ Handles entity cleaning, name mappings, and historical Elo rating computations.
 """
 
 import os
-import pandas as pd
 from typing import Dict, Tuple
+
+import pandas as pd
 
 # Country name mapping to align historical data with the 2026 test set
 COUNTRY_MAPPING = {
@@ -60,7 +61,7 @@ def run_elo_simulation(
     tournament_priors: Dict[Tuple[str, str], float] = {}
 
     current_tournament = None
-    snapshotted_teams = set()
+    snapshotted_teams: set[str] = set()
 
     for _, row in mens_matches.iterrows():
         tour_id = row["tournament_id"]
@@ -148,4 +149,3 @@ def preprocess_data(raw_dir: str, processed_dir: str) -> None:
 
 if __name__ == "__main__":
     preprocess_data("data/raw", "data/processed")
-

@@ -4,7 +4,8 @@ This module defines the schema validation rules, column names, and type checks
 for all input, intermediate, and output datasets in the project.
 """
 
-from typing import List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 # Constants for Stage Names
@@ -86,3 +87,7 @@ class TeamFeatureSchema(BaseModel):
     historical_failed_to_score_rate: float
     historical_appearances: float
     recent_appearances_count: float
+    qualified_last_tournament: int = Field(..., ge=0, le=1)
+    qualified_two_tournaments_ago: int = Field(..., ge=0, le=1)
+    goals_scored_last_wc: float
+    goals_conceded_last_wc: float

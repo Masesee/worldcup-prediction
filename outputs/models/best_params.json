@@ -1,20 +1,20 @@
 {
     "goals": {
-        "learning_rate": 0.1349698103447232,
-        "num_leaves": 10,
-        "max_depth": 5,
-        "min_child_samples": 14,
-        "subsample": 0.9244818907916318,
-        "colsample_bytree": 0.9075427921542362,
-        "n_estimators": 82
+        "learning_rate": 0.11638648462189385,
+        "num_leaves": 28,
+        "max_depth": 6,
+        "min_child_samples": 19,
+        "subsample": 0.87394097920343,
+        "colsample_bytree": 0.9032317873500548,
+        "n_estimators": 156
     },
     "stage": {
-        "learning_rate": 0.05769800037625828,
-        "num_leaves": 9,
-        "max_depth": 4,
-        "min_child_samples": 6,
-        "subsample": 0.7885835135990622,
-        "colsample_bytree": 0.8598629925278461,
-        "n_estimators": 80
+        "learning_rate": 0.047655410456445474,
+        "num_leaves": 19,
+        "max_depth": 3,
+        "min_child_samples": 8,
+        "subsample": 0.8526618396635618,
+        "colsample_bytree": 0.8243481430206744,
+        "n_estimators": 115
     }
 }

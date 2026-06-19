@@ -3,13 +3,14 @@
 Optimizes LightGBM models for goals and stage prediction tasks.
 """
 
-import os
 import json
+import os
+
+import lightgbm as lgb
+import numpy as np
 import optuna
 import pandas as pd
-import numpy as np
 from sklearn.metrics import f1_score
-import lightgbm as lgb
 
 FEATURES = [
     "elo_rating_prior",
@@ -27,15 +28,17 @@ FEATURES = [
     "historical_failed_to_score_rate",
     "historical_appearances",
     "recent_appearances_count",
+    "qualified_last_tournament",
+    "qualified_two_tournaments_ago",
+    "goals_scored_last_wc",
+    "goals_conceded_last_wc",
 ]
 
 # Disable Optuna logging output to keep console clean
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-def run_validation_capacity_mapping(
-    val_df: pd.DataFrame, val_preds: np.ndarray
-) -> pd.DataFrame:
+def run_validation_capacity_mapping(val_df: pd.DataFrame, val_preds: np.ndarray) -> pd.DataFrame:
     """Performs tournament capacity mapping on validation predictions.
 
     Validates against 32-team tournament format (2018/2022).
@@ -88,12 +91,12 @@ def evaluate_goals_model(params: dict, df: pd.DataFrame) -> float:
     for train, val in [(train_f1, val_f1), (train_f2, val_f2)]:
         if train.empty or val.empty:
             continue
-        X_train, y_train = train[FEATURES], train["total_goals"]
-        X_val, y_val = val[FEATURES], val["total_goals"]
+        x_train, y_train = train[FEATURES], train["total_goals"]
+        x_val, y_val = val[FEATURES], val["total_goals"]
 
         model = lgb.LGBMRegressor(**params, verbose=-1)
-        model.fit(X_train, y_train)
-        preds = model.predict(X_val)
+        model.fit(x_train, y_train)
+        preds = model.predict(x_val)
 
         rmse = np.sqrt(np.mean((y_val - preds) ** 2))
         rmses.append(rmse)
@@ -114,12 +117,12 @@ def evaluate_stage_model(params: dict, df: pd.DataFrame) -> float:
     for train, val in [(train_f1, val_f1), (train_f2, val_f2)]:
         if train.empty or val.empty:
             continue
-        X_train, y_train = train[FEATURES], train["Target_ordinal"]
-        X_val, y_val = val[FEATURES], val["Target"]
+        x_train, y_train = train[FEATURES], train["Target_ordinal"]
+        x_val = val[FEATURES]
 
         model = lgb.LGBMRegressor(**params, verbose=-1)
-        model.fit(X_train, y_train)
-        preds = model.predict(X_val)
+        model.fit(x_train, y_train)
+        preds = model.predict(x_val)
 
         # Map predictions to 32-team structure
         val_mapped = run_validation_capacity_mapping(val, preds)
@@ -193,4 +196,3 @@ def tune_pipelines(processed_dir: str, outputs_dir: str) -> None:
 
 if __name__ == "__main__":
     tune_pipelines("data/processed", "outputs/models")
-

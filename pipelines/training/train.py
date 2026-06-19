@@ -4,12 +4,13 @@ Trains final LightGBM models on historical data and generates predictions
 for the 2026 World Cup using 48-team capacity mapping constraints.
 """
 
-import os
 import json
+import os
 import pickle
-import pandas as pd
-import numpy as np
+
 import lightgbm as lgb
+import numpy as np
+import pandas as pd
 
 FEATURES = [
     "elo_rating_prior",
@@ -27,6 +28,10 @@ FEATURES = [
     "historical_failed_to_score_rate",
     "historical_appearances",
     "recent_appearances_count",
+    "qualified_last_tournament",
+    "qualified_two_tournaments_ago",
+    "goals_scored_last_wc",
+    "goals_conceded_last_wc",
 ]
 
 DEFAULT_GOALS_PARAMS = {
@@ -89,9 +94,7 @@ def run_test_capacity_mapping(test_df: pd.DataFrame, preds: np.ndarray) -> pd.Da
     return test_df
 
 
-def train_and_predict(
-    processed_dir: str, models_dir: str, submissions_dir: str
-) -> None:
+def train_and_predict(processed_dir: str, models_dir: str, submissions_dir: str) -> None:
     """Trains final models and runs predictions for the 2026 World Cup."""
     train_feat_path = os.path.join(processed_dir, "train_features.parquet")
     test_feat_path = os.path.join(processed_dir, "test_features.parquet")
@@ -118,9 +121,9 @@ def train_and_predict(
 
     # 1. Train Goals Predictor
     print("Training goals prediction model...")
-    X_train, y_train = train_df[FEATURES], train_df["total_goals"]
+    x_train, y_train = train_df[FEATURES], train_df["total_goals"]
     goals_model = lgb.LGBMRegressor(**goals_params, verbose=-1)
-    goals_model.fit(X_train, y_train)
+    goals_model.fit(x_train, y_train)
 
     # Save goals model
     os.makedirs(models_dir, exist_ok=True)
@@ -129,9 +132,9 @@ def train_and_predict(
 
     # 2. Train Stage Predictor
     print("Training stage prediction model...")
-    X_train_stage, y_train_stage = train_df[FEATURES], train_df["Target_ordinal"]
+    x_train_stage, y_train_stage = train_df[FEATURES], train_df["Target_ordinal"]
     stage_model = lgb.LGBMRegressor(**stage_params, verbose=-1)
-    stage_model.fit(X_train_stage, y_train_stage)
+    stage_model.fit(x_train_stage, y_train_stage)
 
     # Save stage model
     with open(os.path.join(models_dir, "stage_model.pkl"), "wb") as f:
@@ -139,13 +142,13 @@ def train_and_predict(
 
     # 3. Generate predictions
     print("Generating predictions for World Cup 2026...")
-    X_test = test_df[FEATURES]
+    x_test = test_df[FEATURES]
 
     # Predict total goals (ensure no negative predictions)
-    test_df["total_goals"] = np.clip(goals_model.predict(X_test), 0.0, None)
+    test_df["total_goals"] = np.clip(goals_model.predict(x_test), 0.0, None)
 
     # Predict stage score
-    test_stage_preds = stage_model.predict(X_test)
+    test_stage_preds = stage_model.predict(x_test)
 
     # Map predictions to 2026 capacity constraints
     test_mapped = run_test_capacity_mapping(test_df, test_stage_preds)
@@ -155,6 +158,7 @@ def train_and_predict(
 
     # Validate schema using SubmissionRowSchema
     from contracts.schema import SubmissionRowSchema
+
     for _, row in submission.iterrows():
         SubmissionRowSchema(**row.to_dict())
 
@@ -167,4 +171,3 @@ def train_and_predict(
 
 if __name__ == "__main__":
     train_and_predict("data/processed", "outputs/models", "outputs/submissions")
-
